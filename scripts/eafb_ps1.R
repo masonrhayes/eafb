@@ -4,12 +4,11 @@ source("scripts/functions.R")
 
 data = read_dta("data/eafb_ps1_2021.dta")
 
-glimpse(data)
 
 # Question 1 -------
 
-df = data %>%
-  #mutate(year = as_factor(year)) %>% 
+df = data %>% 
+  mutate(merged = ifelse(year == 2016, "no", "yes")) %>% 
   group_by(market) %>% 
   mutate(market_value = sum(passengers * price)) %>%
   mutate(total_passengers = sum(passengers)) %>% 
@@ -61,47 +60,86 @@ df %>%
 ## Define dummy for in a UA market or not ------
 
 ua_markets = df %>% 
-  filter(carrier %in% c("UA", "AA"))
+  filter(carrier == "UA")
+
+aa_markets = df %>% 
+  filter(carrier == "AA")
+
+both_markets = df %>% 
+  mutate(ua_market = ifelse(market %in% ua_markets$market, 1, 0)) %>% 
+  mutate(aa_market = ifelse(market %in% aa_markets$market, 1, 0)) %>% 
+  filter(year == 2016) %>% 
+  mutate(both_markets = ua_market*aa_market) %>% 
+  filter(both_markets == 1)
 
 df = df %>% 
-  mutate(ua_market = ifelse(market %in% ua_markets$market, "yes", "no"))
+  mutate(merging_markets = ifelse(OD %in% both_markets$OD, "yes", "no"))
 
 ## How did HHI, market value, price, and passengers change over time on average in markets where UA operates vs where it does not ? -----------
 
 ## We need to summarize Select only unique markets. Group by year and summarize: ----
 
 table = df %>%
-  group_by(carrier, year, ua_market) %>% 
-  summarize(mean_hhi = mean(hhi),
+  group_by(carrier, year, merging_markets) %>% 
+  summarize(mean_price = sum(price*passengers)/sum(passengers),
+            mean_hhi = mean(hhi),
             mean_market_value = mean(market_value),
             mean_market_share_passengers = mean(market_share_passengers),
-            mean_price = mean(price),
             mean_passengers = mean(passengers),
             mean_total_passengers = mean(total_passengers),
             mean_o1 = mean(owner1),
             mean_o2 = mean(owner2),
             mean_o3 = mean(owner3),
             mean_o4 = mean(owner4),
-            mean_o5 = mean(owner5))
+            mean_o5 = mean(owner5)) %>% 
+  arrange(carrier, merging_markets)
 
-model2 = df %>% 
-  lm(formula = hhi ~ carrier + year + ua_market + ua_market*year)
-
-summary(model2)
-
-model3 = table %>% 
-  filter(between(mean_market_value, 40000, 90000) & between(mean_total_passengers, 200,300)) %>% 
-  lm(formula = mean_hhi ~ carrier + year + ua_market + ua_market*year + mean_passengers + mean_market_value)
+model3 = table %>%
+  mutate(year = as_factor(year)) %>% 
+  filter(between(mean_total_passengers, 150,400)) %>% 
+  felm(formula = mean_price ~ year + merging_markets + merging_markets*year + mean_passengers + mean_market_value | carrier)
 
 summary(model3)
 
 ## Look at a graph ?
-table %>% 
-  filter(mean_total_passengers > 200 & mean_market_value > 40000) %>% 
-  ggplot(aes(year, mean_hhi)) +
+table %>%
+  filter(mean_total_passengers %>% between(100,400)) %>% 
+  ggplot(aes(year, mean_price)) +
   ft_theme()+
   scale_color_ft()+
-  geom_smooth(aes(color = ua_market), se = FALSE) +
-  geom_point(aes(color = ua_market)) +
-  ylim(3750, 6300)
+  geom_jitter(aes(color = merging_markets), width = 0.15, height = 0.00) +
+  geom_smooth(aes(color = merging_markets), se = FALSE)+
+  scale_x_continuous(breaks=2016:2018)
 
+df %>% 
+  group_by(year, carrier,merging_markets) %>% 
+  summarize(mean(price)) %>% 
+  arrange(carrier, merging_markets) %>% 
+  view()
+
+
+
+### Q5 --------
+
+
+model5 = df %>%
+  mutate(year = as_factor(year)) %>%
+  mutate(OD = as_factor(OD)) %>% 
+  felm(formula = log(price) ~ hhi + MHHI + online + roundtrip + year)
+
+summary(model5)
+
+model6 = df %>%
+  mutate(year = as_factor(year)) %>%
+  mutate(OD = as_factor(OD)) %>% 
+  mutate(merging_markets = as_factor(merging_markets)) %>% 
+  felm(formula = hhi ~ total_passengers + market_value + merging_markets + year*merging_markets| carrier)
+
+
+
+model7 = df %>% 
+  mutate(year = as_factor(year)) %>% 
+  mutate(time = ifelse(year == 2016, 0, 1)) %>% 
+  felm(formula = price ~ time + merging_markets + merging_markets*time | carrier)
+
+summary(model7)
