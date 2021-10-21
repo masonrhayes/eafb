@@ -1,0 +1,4 @@
+owner_merged,year,mean(price),mean(owner2),mean(hhi),mean(delta_mhhi)
+no,2016,286.50,15.87,4779,5216
+no,2017,298.18,15.89,4863,5131
+yes,2018,291.81,35.79,4822,5173

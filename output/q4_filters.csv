@@ -1,0 +1,5 @@
+year,merging_markets,owner_merged,mean_price,mean_hhi,mean_mhhi,mean_delta_mhhi
+2017,no,no,256.91,5646,9995,4348
+2018,no,yes,245.80,5705,9996,4291
+2017,yes,no,356.88,4859,9993,5134
+2018,yes,yes,355.86,4642,9994,5352

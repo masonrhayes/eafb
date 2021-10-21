@@ -52,3 +52,16 @@ t = df %>%
             median(market_value),
             min(market_value)) %>% 
   view()
+
+
+## Checks
+
+checking = df %>%
+  mutate(year = as_factor(year)) %>%
+  mutate(OD = as_factor(OD)) %>% 
+  mutate(merging_markets = as_factor(merging_markets)) %>% 
+  filter(total_passengers %>% between(200,400) | market_value %>% between(50000,100000))
+
+dim(checking)
+
+dim(checking %>% filter(merging_markets == "yes"));dim(checking %>% filter(merging_markets == "no"))
