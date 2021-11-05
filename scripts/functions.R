@@ -6,7 +6,7 @@ library(AER)
 library(haven)
 library(ggthemes)
 library(ftplottools)
-library(lubridate)
+library(LaplacesDemon)
 library(lfe)
 
 ## Negate the %in% operator (for convenience)

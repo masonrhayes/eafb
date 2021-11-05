@@ -1,0 +1,93 @@
+---
+title: "Empirical Analysis of Firm Behavior Problem Set 2"
+author: "Mason Ross Hayes"
+date: "11 November 2021"
+output: 
+  pdf_document: 
+    fig_height: 4.2
+---
+
+
+```{r packages, echo=FALSE, message= FALSE, warning=FALSE}
+library("tidyverse")
+library("ftplottools")
+library("LaplacesDemon")
+
+source("scripts/ps2/load_data_ps2.R")
+```
+
+
+
+# Question 1
+
+The distribution of percent misconduct by firm could be described by an Inverse-$\chi^2$ distribution or an Inverse-Gamma distribution or potentially a Beta distribution, depending on the parameters we choose. Below I show a histogram of 100 random samples from an Inverse-$\chi^2$ with 14 degrees of freedom to compare to the firm misconduct histogram. The Inverse-$\chi^2$ can have a longer tail, but on the support of firm misconduct, the histograms are very similar.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+rinvchisq(100, df = 14) %>% 
+  hist(breaks = 50, main = "Figure 1: Inv Chi-Squared Probability Density")
+
+firm_data %>% 
+  ggplot() +
+  geom_histogram(aes(x = pct_with_misc_records),
+                 bins = 50) +
+  ft_theme()+
+  labs(x = "Percent with Misconduct Records, by Firm", y = "Count",
+       title = "Figure 2: Firm Level Misconduct")+
+  xlim(0,0.20)
+```
+
+Misconduct is much more concentrated at the state level. This makes sense &mdash; at the firm level we would expect greater variance, as some firms may have a propensity to engage in misconduct that influences the (mis)conduct of their employees. Or, firms may be in some industry where misconduct is more likely for some structural or organizational reason. Similarly, some firms may be especially strict in regulating misconduct or may emphasize virtues such as honesty and integrity in the workplace, leading both to employment self-selection and to peer effects.
+
+At the state-level, where we aggregate across firms from across all different sectors that exist in a given state, it makes sense that the average misconduct will show less variance between states than between firms. At a more general level, the distribution of aggregated data will (nearly) always be more concentrated than individualized data.
+
+The distribution of percent misconduct at the state level looks more like a normal distribution. Using the mean and standard deviation of state percent misconduct and sampling 100 times from a normal distribution, we get:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+state_level = county_data %>% 
+  filter(!duplicated(state))
+
+rnorm(100, mean(state_level$pct_misc_in_state), sd(state_level$pct_misc_in_state)) %>%
+  hist(breaks = 20, main = "Normal Probability Density",
+       xlim = c(0,0.2))
+
+county_data %>% 
+  filter(!duplicated(state)) %>% 
+  ggplot() +
+  geom_histogram(aes(x = pct_misc_in_state),
+                 bins = 45) +
+  ft_theme()+
+  labs(x = "Percent with Misconduct Records, by State", y = "Count",
+       title = "Figure 3: State Level Misconduct")+
+  xlim(0,0.20)
+```
+
+
+# Question 2
+
+Before running this regression, there are a couple useful graphs to look at: what is the distribution of the percent misconduct conditional on the number of brokers, and what is the distribution of the number of brokers conditional on the percent misconduct?
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+county_data %>% 
+  filter(countyname != "New York") %>% 
+  ggplot() +
+  facet_wrap(~nbrokers_quantile)+
+  geom_histogram(aes(x =pct_with_misc_records),
+                 bins = 50)+
+  ft_theme()+
+  labs(title = "Percent Misconduct by County", subtitle = "By Quantile of Number of Brokers", x = "Percent Misconduct")
+
+
+county_data %>% 
+  filter(countyname != "New York") %>% 
+  ggplot() +
+  facet_wrap(~misc_quantile)+
+  geom_histogram(aes(x = sqrt(nbrokers)),
+                 bins = 50)+
+  ft_theme()+
+  labs(title = "Number of Brokers by County", subtitle = "By Quantile of Percent Misconduct", x = "Square Root of Number of Brokers")
+
+```
+
+The distribution of the number of brokers for those counties falling in the bottom quantile of percent misconduct has a longer tail compared to those in the top quantile: the likelihood of a high number of brokers is higher. Notice, however, that the likelihood of a very low number of brokers is also higher.
+
+The middle quantiles represent twice the number of observations as the bottom or top, so it will have higher density. 
