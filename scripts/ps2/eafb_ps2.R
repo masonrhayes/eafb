@@ -41,10 +41,6 @@ rnorm(100, mean(state_level$pct_misc_in_state), sd(state_level$pct_misc_in_state
 
 # Question 2 --------
 
-q2_model = county_data %>% 
-  felm(formula = pct_with_misc_records ~ nbrokers | state)
-
-summary(q2_model)
 
 county_data %>% 
   filter(countyname != "New York") %>%
@@ -78,3 +74,67 @@ county_data %>%
                  bins = 50)+
   ft_theme()+
   labs(title = "Percent Misconduct by County", subtitle = "By Quantile of Number of Brokers", x = "Percent Misconduct")
+
+
+## Misconduct histograms by state -------
+## defined in functions.R
+
+### before Idaho
+
+county_data %>% 
+  filter(state <= "Idaho") %>% 
+  misconduct_by_state
+
+## before Miss, After Idaho
+## 
+county_data %>% 
+  filter(state > "Idaho" & state <= "Mississippi") %>% 
+  misconduct_by_state()
+
+## Before OK, after MS
+county_data %>% 
+  filter(state > "Mississippi" & state <= "Oklahoma") %>% 
+  misconduct_by_state()
+
+# the rest
+county_data %>% 
+  filter(state > "Oklahoma" & state <= "Wyoming") %>% 
+  misconduct_by_state()
+
+# Q2 regression -------
+
+
+q2_model = county_data %>% 
+  # filter(countyname != "New York") %>% 
+  felm(formula = pct_with_misc_records ~ nbrokers + sq_nbrokers | state)
+
+summary(q2_model)
+
+q2_model %>% 
+  stargazer(type = "latex", title = "Q2 Model: State FE" ,
+            out = "output/ps2/q2_model.tex",
+            label = "q2_model",
+            digits = 6,
+            dep.var.labels = "Percent Misconduct")
+
+summary(q2_model)
+
+
+# Question 3 --------
+data = county_data %>% 
+  left_join(education)
+
+
+q3_model = data %>%
+  # filter(countyname != "New York") %>% 
+  felm(formula = pct_with_misc_records ~ nbrokers + sq_nbrokers + pct_hs + pct_some_college | state)
+
+summary(q3_model)
+
+
+q3_model %>% 
+  stargazer(type = "latex", title = "Q3 Model: State FE" ,
+            out = "output/ps2/q3_model.tex",
+            label = "q3_model",
+            digits = 6,
+            dep.var.labels = "Percent Misconduct")

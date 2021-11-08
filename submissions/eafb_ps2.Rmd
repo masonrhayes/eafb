@@ -14,6 +14,7 @@ library("ftplottools")
 library("LaplacesDemon")
 
 source("scripts/ps2/load_data_ps2.R")
+source("scripts/functions.R")
 ```
 
 
@@ -36,7 +37,7 @@ firm_data %>%
   xlim(0,0.20)
 ```
 
-Misconduct is much more concentrated at the state level. This makes sense &mdash; at the firm level we would expect greater variance, as some firms may have a propensity to engage in misconduct that influences the (mis)conduct of their employees. Or, firms may be in some industry where misconduct is more likely for some structural or organizational reason. Similarly, some firms may be especially strict in regulating misconduct or may emphasize virtues such as honesty and integrity in the workplace, leading both to employment self-selection and to peer effects.
+Compared to this firm-level distribution, the state-level distribution shows less variance; misconduct is much more concentrated at the state level. This makes sense &mdash; at the firm level we would expect greater variance, as some firms may have a propensity to engage in misconduct that influences the (mis)conduct of their employees. Or, firms may be in some industry where misconduct is more likely for some structural or organizational reason. Similarly, some firms may be especially strict in regulating misconduct or may emphasize virtues such as honesty and integrity in the workplace, leading both to employment self-selection and to peer effects.
 
 At the state-level, where we aggregate across firms from across all different sectors that exist in a given state, it makes sense that the average misconduct will show less variance between states than between firms. At a more general level, the distribution of aggregated data will (nearly) always be more concentrated than individualized data.
 
@@ -47,7 +48,7 @@ state_level = county_data %>%
   filter(!duplicated(state))
 
 rnorm(100, mean(state_level$pct_misc_in_state), sd(state_level$pct_misc_in_state)) %>%
-  hist(breaks = 20, main = "Normal Probability Density",
+  hist(breaks = 20, main = "Figure 3: Normal Probability Density",
        xlim = c(0,0.2))
 
 county_data %>% 
@@ -57,7 +58,7 @@ county_data %>%
                  bins = 45) +
   ft_theme()+
   labs(x = "Percent with Misconduct Records, by State", y = "Count",
-       title = "Figure 3: State Level Misconduct")+
+       title = "Figure 4: State Level Misconduct")+
   xlim(0,0.20)
 ```
 
@@ -74,7 +75,7 @@ county_data %>%
   geom_histogram(aes(x =pct_with_misc_records),
                  bins = 50)+
   ft_theme()+
-  labs(title = "Percent Misconduct by County", subtitle = "By Quantile of Number of Brokers", x = "Percent Misconduct")
+  labs(title = "Figure 5: Percent Misconduct by County", subtitle = "By Quantile of Number of Brokers", x = "Percent Misconduct")
 
 
 county_data %>% 
@@ -84,10 +85,130 @@ county_data %>%
   geom_histogram(aes(x = sqrt(nbrokers)),
                  bins = 50)+
   ft_theme()+
-  labs(title = "Number of Brokers by County", subtitle = "By Quantile of Percent Misconduct", x = "Square Root of Number of Brokers")
+  labs(title = "Figure 6: Number of Brokers by County", subtitle = "By Quantile of Percent Misconduct", x = "Square Root of Number of Brokers")
 
 ```
 
-The distribution of the number of brokers for those counties falling in the bottom quantile of percent misconduct has a longer tail compared to those in the top quantile: the likelihood of a high number of brokers is higher. Notice, however, that the likelihood of a very low number of brokers is also higher.
+The distribution of the number of brokers for those counties falling in the bottom quantile of percent misconduct has a longer tail compared to those in the top quantile: the likelihood of a high number of brokers is higher. Without this long tail, the distributions of bottom, middle, and top quantiles all look remarkably similar. 
 
-The middle quantiles represent twice the number of observations as the bottom or top, so it will have higher density. 
+The estimation of state level fixed effects will depend on the quality of data that we have; for many states, we have only a handful of observations. This may be insufficient to truly estimate state effects if we only observe one county &mdash; and in this scenario, we are probably only observing the most populous or wealthiest counties. 
+
+In the following figures I show the distribution of misconduct by state:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+### before Idaho
+
+county_data %>% 
+  filter(state <= "Idaho") %>% 
+  misconduct_by_state
+
+## before Miss, After Idaho
+## 
+county_data %>% 
+  filter(state > "Idaho" & state <= "Mississippi") %>% 
+  misconduct_by_state()
+
+## Before OK, after MS
+county_data %>% 
+  filter(state > "Mississippi" & state <= "Oklahoma") %>% 
+  misconduct_by_state()
+
+# the rest
+county_data %>% 
+  filter(state > "Oklahoma" & state <= "Wyoming") %>% 
+  misconduct_by_state()
+```
+
+I have quite a strong prior belief that the distribution of misconduct is not inherently different across states. However, the fixed effects we estimate will probably vary greatly, especially since we have few observations per state. For example, we only observe 3 counties in all of Oklahoma; this may lead to a biased fixed effect estimate for Oklahoma.
+
+\begin{table}[!htbp] \centering 
+  \caption{Q2 Model: State FE} 
+  \label{q2_model} 
+\begin{tabular}{@{\extracolsep{5pt}}lc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{1}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-2} 
+\\[-1.8ex] & Percent Misconduct \\ 
+\hline \\[-1.8ex] 
+ nbrokers & $-$0.000003$^{***}$ \\ 
+  & (0.000001) \\ 
+  & \\ 
+ sq\_nbrokers & 0.000000$^{**}$ \\ 
+  & (0.000000) \\ 
+  & \\ 
+\hline \\[-1.8ex] 
+Observations & 473 \\ 
+R$^{2}$ & 0.349816 \\ 
+Adjusted R$^{2}$ & 0.269317 \\ 
+Residual Std. Error & 0.027364 (df = 420) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{1}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table} 
+
+In Table 1 I show the results of a state-fixed effects regression of misconduct on the number of brokers and the square of number of brokers, since we may expect that an increase in the number of brokers has a diminishing impact. The estimated broker coefficient is statistically significant but does not seem very meaningful; an increase of 5000 brokers is associated with a 0.0137 lower percent misconduct.
+
+This coefficient is heavily skewed by outliers &mdash; for example, dropping New York county from the data leads to a 64% increase in the magnitude of the estimated coefficient.
+
+# Question 3
+
+## The Research Idea
+
+Educational attainment may help explain misconduct at the county level. For example, it may be the case that better education is associated with greater ethics &mdash; this seems unlikely however, as college education is an intellectual pursuit and not a character-building endeavor; greater knowledge does not imply better ethical judgment.
+
+It seems more likely that counties with low education would see higher misconduct, not because less-educated brokers are committing misconduct, but rather that less-educated consumers may have less knowledge of how to report misconduct, less awareness that it is taking place, or fewer resources to challenge misconduct. This is similar to the claim made by Egan et al. 2016 that financial advisory firms who engage in misconduct "cater to unsophisticated consumers".
+
+## The Data
+
+I pull county-level educational attainment data from the Economic Research Service of the USDA. This includes the number of people at with a certain level of educational attainment (less than high school, high school diploma, some college, or bachelor's degree and more), as well as percent of the population with a certain level of educational attainment, from 1970 to 2019. Since we are not told from what year is the county data set we are provided, I use only educational data from 2000.
+
+## Regression Results
+
+The coefficients for number of brokers and for the percent of county residents with some college education are both significant at the 5% level. The effect of the number of brokers seems to be slightly dampened after adjusting for education levels in the county; it changes from $-2.73 \times 10^{-6}$ to $2.13 \times 10^{-6}$. For an increase of one percentage point in those with some college, there is an increase of 1.27 percentage points of misconduct; in those counties with a higher fraction of residents who have some college education, there is a higher likelihood of financial misconduct.
+
+\begin{table}[!htbp] \centering 
+  \caption{Q3 Model: State FE} 
+  \label{q3_model} 
+\begin{tabular}{@{\extracolsep{5pt}}lc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{1}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-2} 
+\\[-1.8ex] & Percent Misconduct \\ 
+\hline \\[-1.8ex] 
+ nbrokers & $-$0.000002$^{**}$ \\ 
+  & (0.000001) \\ 
+  & \\ 
+ sq\_nbrokers & 0.000000 \\ 
+  & (0.000000) \\ 
+  & \\ 
+ pct\_hs & $-$0.000021 \\ 
+  & (0.000321) \\ 
+  & \\ 
+ pct\_some\_college & 0.001273$^{**}$ \\ 
+  & (0.000508) \\ 
+  & \\ 
+\hline \\[-1.8ex] 
+Observations & 415 \\ 
+R$^{2}$ & 0.352135 \\ 
+Adjusted R$^{2}$ & 0.269166 \\ 
+Residual Std. Error & 0.027685 (df = 367) \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{1}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table} 
+
+
+
+
+
+
+# References 
+
+Egan, Mark, Gregor Matvos, and Amit Seru. “The Market for Financial Adviser Misconduct.” SSRN Scholarly Paper. Rochester, NY: Social Science Research Network, September 1, 2017. https://doi.org/10.2139/ssrn.2739170.
+
+USDA ERS. “Educational attainment for the U.S., States, and counties, 1970-2019.” Accessed November 8, 2021. https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/.
