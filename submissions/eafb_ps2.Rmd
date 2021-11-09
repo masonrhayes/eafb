@@ -5,6 +5,7 @@ date: "11 November 2021"
 output: 
   pdf_document: 
     fig_height: 4.2
+    fig_width: 6.2
 ---
 
 
@@ -70,20 +71,18 @@ Before running this regression, there are a couple useful graphs to look at: wha
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 county_data %>% 
   filter(countyname != "New York") %>% 
-  ggplot() +
+  ggplot(aes(x = pct_with_misc_records)) +
   facet_wrap(~nbrokers_quantile)+
-  geom_histogram(aes(x =pct_with_misc_records),
-                 bins = 50)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
   ft_theme()+
   labs(title = "Figure 5: Percent Misconduct by County", subtitle = "By Quantile of Number of Brokers", x = "Percent Misconduct")
 
 
 county_data %>% 
   filter(countyname != "New York") %>% 
-  ggplot() +
+  ggplot(aes(x = sqrt(nbrokers))) +
   facet_wrap(~misc_quantile)+
-  geom_histogram(aes(x = sqrt(nbrokers)),
-                 bins = 50)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
   ft_theme()+
   labs(title = "Figure 6: Number of Brokers by County", subtitle = "By Quantile of Percent Misconduct", x = "Square Root of Number of Brokers")
 
@@ -171,9 +170,9 @@ County data for the states of Alabama to Connecticut (in alphabetical order) is 
 
 With this regression, I hope to show if there exists a correlation between educational attainment and financial misconduct in US counties. The proposed hypothesis is that counties with lower educational attainment will show higher levels of misconduct.
 
-The coefficients for number of brokers and for the percent of county residents with some college education are both significant at the 5% level. The effect of the number of brokers seems to be slightly dampened after adjusting for education levels in the county; it changes from $-2.73 \times 10^{-6}$ to $1.94 \times 10^{-6}$. For an increase of one percentage point in those with less than a high school diploma, there is an decrease of 0.11 percentage points of misconduct; in those counties with a higher fraction of residents who have lower than a high school education, there is a higher likelihood of financial misconduct.
+The coefficients for number of brokers and for the percent of county residents with some college education are both significant at the 5% level. The effect of the number of brokers seems to be slightly dampened after adjusting for education levels in the county; it changes from $-2.73 \times 10^{-6}$ to $-1.94 \times 10^{-6}$. For an increase of one percentage point in those with less than a high school diploma, there is an decrease of 0.11 percentage points of misconduct; in those counties with a higher fraction of residents who have lower than a high school education, there is a higher likelihood of financial misconduct. This may be misleading however, as areas with low educational attainment may simply be poorer areas that have lower demand for financial services; I should add county-level GDP or perhaps county-level poverty rates to the regression to account for such a possibility.
 
-This estimate is not robust to the inclusion of different educational measures; after controlling for _some college_, for example, the coefficient for `pct_less_than_hs` is no longer significant.
+Furthermore, the estimated coefficients are not robust to the inclusion of different educational measures; after controlling for _some college_, for example, the coefficient for `pct_less_than_hs` is no longer significant, nor are coefficients of the other educational variables. Clearly, however, as these educational attainment categories are mutually exclusive and cover the entire county population, they are collinear; if a county has a low percentage of population with a bachelor's degree or higher, it necessarily has a relatively higher population of people with some college, a high school diploma, or less. So, we have to have caution in simply adding more variables in the regression; this is an additional reason that I've chosen to focus only on those with lower than a high school education and those with higher than a bachelor's degree.
 
 \begin{table}[!htbp] \centering 
   \caption{Q3 Model: State FE} 
@@ -237,15 +236,46 @@ data %>%
 
 ```
 
+Additionally, I look at the distribution of percent less than HS education conditional on where the county falls in number of brokers or in percent misconduct:
+
+```{r, echo = FALSE, warning = FALSE, message=FALSE}
+data %>% 
+  ggplot(aes(x = pct_bachelors))+
+  facet_wrap(~misc_quantile)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
+  ft_theme()+
+  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Percent Misconduct", x = "Percent with Less than High School Education")+
+  scale_x_continuous(limits = c(0,65))
+
+
+data %>% 
+  ggplot(aes(x = pct_bachelors))+
+  facet_wrap(~nbrokers_quantile)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
+  ft_theme()+
+  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Number of Brokers", x = "Percent with Less than High School Education")+
+  scale_x_continuous(limits = c(0,65))
+
+```
+
+Notice that, conditional on greater than or equal to 40% of the population of a given county having less than a high school education, it is most likely that that county falls in the top quantile number of brokers. 
+
+
 # Question 4
 
 ## Research Proposal
 
 These results are not very illuminating for my initial curiosity of how does educational attainment interact with financial misconduct. With this data, there is very little, if any evidence of a statistically significant or economically meaningful relationship between educational attainment levels and financial misconduct rates. 
 
-While the typical broker would have a Bachelor's degree in finance, business, economics, or other fields, there is no formal educational requirement to become a broker. From the current data, there is little evidence to support the idea that financial misconduct is more frequent in counties with lower educational attainment. It would be insightful to view data on broker educational attainment, performance, and career trajectories (relocations); the issue would be collecting this data which could span across multiple counties, states, and firms.
+While the typical broker would have a Bachelor's degree in finance, business, economics, or other fields, there is no formal educational requirement to become a broker. From the current data, there is little evidence to support the idea that financial misconduct is more frequent in counties with lower educational attainment. However, we have not answered the question of whether brokers who have _ever_ committed financial misconduct are more likely to later locate in these areas.
 
-Every broker in the United States has a Central Registration Depository (CRD) number; this number may change when they change positions, but is always tied to their unique ID. By using this identifier, we could track where particular brokers move over time &mdash; we could see for example if, after being found guilty of misconduct, a broker is likely to move to a smaller county, a smaller firm, or a county with lower educational attainment. By obtaining educational data for each broker, we could answer the question: does the distribution of broker misconduct vary based on brokers' educational attainment ? 
+In Question 3, I suggested that perhaps "lower quality" brokers may go to less-educated areas &mdash; this could be a combination of the fact that areas with lower educational attainment are generally less developed as well and are home to fewer and less prestigious financial firms. In this case, a broker's financial misconduct could serve to financial firms as a signal that that broker is of low quality. If this is the case, we may expect brokers to begin their career in a highly developed area and/or at a large financial firm and to then move to a less developed area/smaller firm after being found guilty of misconduct, since the more influential financial firms would not be willing to hire them.
+
+It would be insightful to have data on broker educational attainment, performance (returns), and career trajectories (relocations); the issue would be collecting this data which could span across multiple counties, states, and firms.
+
+Every broker in the United States has a Central Registration Depository (CRD) number; this number may change when they change positions, but is always tied to their unique ID. By using this identifier, we could track where particular brokers move over time &mdash; we could see for example if, after being found guilty of misconduct, a broker is likely to move to a smaller county, a smaller firm, or a county with lower educational attainment. Most of this data is already public, but the misconduct data we have is aggregated. I would need the time, area, firm, and CRD number associated with the misconduct, and with this data I could attempt to answer the question: after committing financial misconduct, are brokers more likely to relocate to an area with a lower level of educational attainment?
+
+With data on broker education and performance, we could also attempt to answer the secondary questions: does the distribution of broker misconduct vary based on brokers' educational attainment ? Are brokers with a history of low performance more likely to later be found guilty of misconduct?  
 
 
 # References 

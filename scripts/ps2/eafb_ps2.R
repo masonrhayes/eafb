@@ -68,10 +68,9 @@ county_data %>%
 
 county_data %>% 
   filter(countyname != "New York") %>%  
-  ggplot() +
+  ggplot(aes(x = pct_with_misc_records)) +
   facet_wrap(~nbrokers_quantile)+
-  geom_histogram(aes(x = pct_with_misc_records),
-                 bins = 50)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
   ft_theme()+
   labs(title = "Percent Misconduct by County", subtitle = "By Quantile of Number of Brokers", x = "Percent Misconduct")
 
@@ -167,7 +166,8 @@ data %>%
   facet_wrap(~misc_quantile)+
   geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
   ft_theme()+
-  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Percent Misconduct", x = "Percent with Less than High School Education")
+  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Percent Misconduct", x = "Percent with Less than High School Education")+
+  scale_x_continuous(limits = c(0,65))
 
 
 data %>% 
@@ -175,4 +175,5 @@ data %>%
   facet_wrap(~nbrokers_quantile)+
   geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
   ft_theme()+
-  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Number of Brokers", x = "Percent with Less than High School Education")
+  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Number of Brokers", x = "Percent with Less than High School Education")+
+  scale_x_continuous(limits = c(0,65))
