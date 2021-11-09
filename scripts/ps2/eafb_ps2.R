@@ -121,13 +121,10 @@ summary(q2_model)
 
 
 # Question 3 --------
-data = county_data %>% 
-  left_join(education)
-
 
 q3_model = data %>%
   # filter(countyname != "New York") %>% 
-  felm(formula = pct_with_misc_records ~ nbrokers + sq_nbrokers + pct_hs + pct_some_college | state)
+  felm(formula = pct_with_misc_records ~ nbrokers + sq_nbrokers + pct_less_than_hs + pct_bachelors | state)
 
 summary(q3_model)
 
@@ -138,3 +135,44 @@ q3_model %>%
             label = "q3_model",
             digits = 6,
             dep.var.labels = "Percent Misconduct")
+
+# Histogram of educational data, pct < HS
+data %>% 
+  filter(pct_less_than_hs > 0) %>% 
+  filter(state <= "Maine") %>% 
+  education_by_state()
+
+## After Maine, until NM
+data %>% 
+  filter(pct_less_than_hs > 0) %>% 
+  filter(state > "Maine" & state <= "New Mexico") %>% 
+  education_by_state()
+
+# After NM, until TN
+data %>% 
+  filter(pct_less_than_hs > 0) %>% 
+  filter(state > "New Mexico" & state <= "Tennessee") %>% 
+  education_by_state()
+
+data %>% 
+  filter(pct_less_than_hs > 0) %>% 
+  filter(state > "Tennessee" & state <= "Wyoming") %>% 
+  education_by_state()
+
+
+## facet wrap by quantiles of misconduct or brokers
+
+data %>% 
+  ggplot(aes(x = pct_bachelors))+
+  facet_wrap(~misc_quantile)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
+  ft_theme()+
+  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Percent Misconduct", x = "Percent with Less than High School Education")
+
+
+data %>% 
+  ggplot(aes(x = pct_bachelors))+
+  facet_wrap(~nbrokers_quantile)+
+  geom_histogram(binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)))+
+  ft_theme()+
+  labs(title = "Distribution of Percent with Less than HS Education", subtitle = "By Quantile of Number of Brokers", x = "Percent with Less than High School Education")

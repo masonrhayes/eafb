@@ -21,12 +21,12 @@ education = read_csv("data/education.csv")%>%
   select(`FIPS Code`, contains("2000")) %>% 
   setNames(., c("fips", "less_than_hs", "hs",
                 "some_college", "bachelors", "pct_less_than_hs",
-                "pct_hs", "pct_some_college", "pct_"))
+                "pct_hs", "pct_some_college", "pct_bachelors"))
 
 
 names(education)[1] = "fips"
 
-names(education)
+## Join county data with educational data -----
 
-
-head(education)
+data = county_data %>% 
+  left_join(education)
