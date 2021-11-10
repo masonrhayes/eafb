@@ -1,5 +1,6 @@
 ---
-title: "Empirical Analysis of Firm Behavior Problem Set 2"
+title: "Problem Set 2"
+subtitle: "for Empirical Analysis of Firm Behavior"
 author: "Mason Ross Hayes"
 date: "11 November 2021"
 output: 
@@ -22,7 +23,7 @@ source("scripts/functions.R")
 
 # Question 1
 
-The distribution of percent misconduct by firm could be described by an Inverse-$\chi^2$ distribution or an Inverse-Gamma distribution or potentially a Beta distribution, depending on the parameters we choose. Below I show a histogram of 100 random samples from an Inverse-$\chi^2$ with 14 degrees of freedom to compare to the firm misconduct histogram. The Inverse-$\chi^2$ can have a longer tail, but on the support of firm misconduct, the histograms are very similar.
+The distribution of percent misconduct by firm could be described by an Inverse-$\chi^2$ distribution or an Inverse-Gamma distribution, depending on the parameters we choose. Below I show a histogram of 100 random samples from an Inverse-$\chi^2$ with 14 degrees of freedom to compare to the firm misconduct histogram. The Inverse-$\chi^2$ can have a longer tail, but on the support of firm misconduct, the histograms are very similar.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 rinvchisq(100, df = 14) %>% 
@@ -38,9 +39,6 @@ firm_data %>%
   xlim(0,0.20)
 ```
 
-Compared to this firm-level distribution, the state-level distribution shows less variance; misconduct is much more concentrated at the state level. This makes sense &mdash; at the firm level we would expect greater variance, as some firms may have a propensity to engage in misconduct that influences the (mis)conduct of their employees. Or, firms may be in some industry where misconduct is more likely for some structural or organizational reason. Similarly, some firms may be especially strict in regulating misconduct or may emphasize virtues such as honesty and integrity in the workplace, leading both to employment self-selection and to peer effects.
-
-At the state-level, where we aggregate across firms from across all different sectors that exist in a given state, it makes sense that the average misconduct will show less variance between states than between firms. At a more general level, the distribution of aggregated data will (nearly) always be more concentrated than individualized data.
 
 The distribution of percent misconduct at the state level looks more like a normal distribution. Using the mean and standard deviation of state percent misconduct and sampling 100 times from a normal distribution, we get:
 
@@ -63,6 +61,9 @@ county_data %>%
   xlim(0,0.20)
 ```
 
+Compared to the firm-level distribution, the state-level distribution shows less variance; misconduct is much more concentrated at the state level. This makes sense &mdash; at the firm level we would expect greater variance, as some firms may have a propensity to engage in misconduct that influences the (mis)conduct of their employees. Or, firms may be in some industry where misconduct is more likely for some structural or organizational reason. Similarly, some firms may be especially strict in regulating misconduct or may emphasize virtues such as honesty and integrity in the workplace, leading both to employment self-selection and to peer effects. These different qualities would vary greatly across specializations and across firms, but we would expect that the composition of firms is relatively similar in different states.
+
+At the state-level, where we aggregate across firms that exist in a given state, it makes sense that the average misconduct will show less variance between states than between firms. To grossly generalize, the distribution of aggregated data will always show less variance than individualized data.
 
 # Question 2
 
